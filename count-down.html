@@ -1,0 +1,185 @@
+<!-- Import Polymer -->
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<!--
+`count-down` displays a ticking timer to a given date and time.
+
+Example:
+
+    <count-down hour="11" minute="20" usewords></count-down>
+
+@class count-down
+@homepage .
+-->
+
+<!-- Define your custom element -->
+<polymer-element
+    name="count-down"
+    attributes="year month day hour minute second usewords">
+
+    <template>{{labelText}}</template>
+
+    <script>
+        Polymer('count-down', {
+            /**
+             * The countdown's target year. Defaults to the current year.
+             *
+             * @attribute [year]
+             * @type number
+             */
+            year: null,
+
+            /**
+             * The countdown's target month. Defaults to the current month.
+             *
+             * @attribute [month]
+             * @type number
+             */
+            month: null,
+
+            /**
+             * The countdown's target day. Defaults to the current day.
+             *
+             * @attribute [day]
+             * @type number
+             */
+            day: null,
+
+            /**
+             * The countdown's target hour. Defaults to the current hour.
+             *
+             * @attribute [hour]
+             * @type number
+             */
+            hour: null,
+
+            /**
+             * The countdown's target minute. Defaults to the current minute.
+             *
+             * @attribute [minute]
+             * @type number
+             */
+            minute: null,
+
+            /**
+             * The countdown's target second. Defaults to the current second.
+             *
+             * @attribute [second]
+             * @type number
+             */
+            second: null,
+
+            /**
+             * Whether the countdown should use words instead of colons. Defaults to false.
+             *
+             * @attribute [usewords]
+             * @type boolean
+             */
+            usewords: null,
+            
+            // Fires when the "<polymer-element>" has been fully prepared
+            ready: function() {},
+
+            // Fires when the element was inserted into the document
+            attached: function() {
+                this.updateTargetDate_();
+                this.updateCountDown_();
+                this.updateCountDownInterval_ = 
+                    window.setInterval(this.updateCountDown_.bind(this), 1000);
+            },
+
+            // Fires when the element was removed from the document
+            detached: function() {
+                window.clearInterval(this.updateCountDownInterval_);
+            },
+
+            // Fires when an attribute was added, removed, or updated
+            attributeChanged: function(attr, oldVal, newVal) {
+                this.updateTargetDate_();
+                this.updateCountDown_();
+            },
+
+            updateTargetDate_: function() {
+                this.targetDate_ = new Date();
+
+                if (this.year) {
+                    this.targetDate_.setFullYear(this.year, 0, 1);
+                    this.targetDate_.setHours(0, 0, 0, 0);
+                }
+                if (this.month) {
+                    // Subtract 1, since setMonth accepts values 0-11.
+                    this.targetDate_.setMonth(this.month - 1, 1);
+                    this.targetDate_.setHours(0, 0, 0, 0);
+                }
+                if (this.day) {
+                    this.targetDate_.setDate(this.day);
+                    this.targetDate_.setHours(0, 0, 0, 0);
+                }
+                if (this.hour) {
+                    this.targetDate_.setHours(this.hour, 0, 0, 0);
+                }
+                if (this.minute) {
+                    this.targetDate_.setMinutes(this.minute, 0, 0);
+                }
+                if (this.second) {
+                    this.targetDate_.setSeconds(this.second, 0);
+                }
+            },
+
+            updateCountDown_: function() {
+                var now = new Date();
+                var secsDifference =
+                    Math.floor((this.targetDate_.getTime() - now.getTime()) / 1000);
+
+                var pastTargetTime = false;
+                if (secsDifference < 0) {
+                    secsDifference = -secsDifference;
+                    pastTargetTime = true;
+                }
+
+                var components = [
+                    this.getComponentString_(
+                        Math.floor(secsDifference % (24 * 60 * 60) / (60 * 60)), 'hour'),
+                    this.getComponentString_(
+                        Math.floor(secsDifference % (60 * 60) / 60), 'minute'),
+                    this.getComponentString_(
+                        Math.floor(secsDifference % 60), 'second')
+                ];
+                var days = Math.floor(secsDifference / (24 * 60 * 60));
+                if (days > 0) {
+                    components.unshift(this.getComponentString_(days, 'day'));
+                }
+
+                var labelText = '';
+                if (this.usewords === null) {
+                    if (pastTargetTime) labelText = '-'
+                    labelText += components.join(':');
+                } else {
+                    labelText = components.join(' ');
+                    if (pastTargetTime) labelText += ' since';
+                    else labelText += ' remaining';
+                }
+                this.labelText = labelText;
+            },
+
+            getComponentString_: function(value, unitStr) {
+                if (this.usewords !== null) {
+                    return value + ' ' + this.pluralize_(unitStr, value);
+                } else {
+                    return this.padNumber_(value);
+                }
+            },
+
+            padNumber_: function(number) {
+                if (number < 10) return '0' + number;
+                return '' + number;
+            },
+
+            pluralize_: function(str, number) {
+                if (number == 1) return str;
+                return str + 's';
+            }
+        });
+    </script>
+
+</polymer-element>
